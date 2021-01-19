@@ -36,5 +36,38 @@ namespace Capsaicin.RegexUtil
                 CollectionAssert.AreEqual(expected, actual.CaptureIndexes);
             }
         }
+
+        [TestMethod]
+        public void FlattenTest()
+        {
+            var regex = new Regex(@"^(?<object>(?<id>[a-zA-Z]\w*)\((?<property>(?<name>[a-zA-Z]\w*)=(?<value>\w*)(,(?=[a-zA-Z]))?)*\)(,(?=[a-zA-Z]))?)*$");
+            var match = regex.Match("obj1(a=1,b=2),obj2(x=y)");
+
+            var testObject = match
+                .Group("id", "property", "name", "value") // for nested groups it is essential to specify all captures that are later used!
+                .By("object")
+                .ThenBy("property");
+            var actual = testObject.Flatten("name", "value");
+
+            Assert.IsNotNull(actual);
+            var actualAsList = actual.ToList();
+            Assert.AreEqual(3, actualAsList.Count);
+
+            var propertyCaptures = match.Groups["property"].Captures;
+            var nameCaptures = match.Groups["name"].Captures;
+            var valueCaptures = match.Groups["value"].Captures;
+
+            for (int i = 0; i < 3; i++)
+            {
+                var actualItem = actualAsList[i];
+                Assert.IsNotNull(actualItem);
+                Assert.AreEqual(2, actualItem.Count);
+                Assert.AreEqual(2, actualItem.Captures.Length);
+
+                Assert.AreEqual(propertyCaptures[i], actualItem.Key);
+                Assert.AreEqual(nameCaptures[i], actualItem.Captures[0]);
+                Assert.AreEqual(valueCaptures[i], actualItem.Captures[1]);
+            }
+        }
     }
 }
