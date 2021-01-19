@@ -30,6 +30,7 @@ steps:
     projects: '**/*.csproj'
     verbosityRestore: Normal
     feedsToUse: config
+    nugetConfigPath: 'nuget.config'
     includeNuGetOrg: true
 
 # tests
