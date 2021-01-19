@@ -5,15 +5,56 @@
 
 trigger:
 - main
+- develop
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'windows-latest'
+
+variables:
+  GitVersion.FullSemVer: ''
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- task: gitversion/setup@0
+  inputs:
+    versionSpec: '5.x'
+  name: GitVersionSetup
+  displayName: 'get gitversion tools'
+  
+- task: gitversion/execute@0
+  name: GetVersion
+  displayName: 'get version from repository'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'restore'
+    projects: '**/*.csproj'
+    verbosityRestore: Normal
+    feedsToUse: config
+    includeNuGetOrg: true
+
+# tests
+- task: DotNetCoreCLI@2
+  displayName: 'build tests'
+  inputs:
+    command: 'build'
+    projects: '**/*.Tests.csproj'
+
+- task: VSTest@2
+  displayName: 'run tests'
+  inputs:
+    testSelector: 'testAssemblies'
+    testAssemblyVer2: |
+      **\*.Tests.dll
+      !**\*TestAdapter.dll
+      !**\obj\**
+      !**\ref\**
+    searchFolder: '$(System.DefaultWorkingDirectory)'
+
+# Nuget package
+- task: DotNetCoreCLI@2
+  displayName: 'pack project'
+  inputs:
+    command: 'pack'
+    packagesToPack: 'Capsaicin.RegexUtil/Capsaicin.RegexUtil.csproj'
+    versioningScheme: 'byEnvVar'
+    versionEnvVar: 'GitVersion.FullSemVer'
