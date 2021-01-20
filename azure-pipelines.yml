@@ -13,57 +13,97 @@ pool:
 variables:
   GitVersion.FullSemVer: ''
 
-steps:
-- task: gitversion/setup@0
-  inputs:
-    versionSpec: '5.x'
-  name: GitVersionSetup
-  displayName: 'get gitversion tools'
-  
-- task: gitversion/execute@0
-  name: GetVersion
-  displayName: 'get version from repository'
+stages:
+- stage: build
+  displayName: 'Build Nuget Package'
+  jobs:
+  - job: CI_Build
+    displayName: 'Nuget - Build, Pack and Test'    
+    steps:
 
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'restore'
-    projects: '**/*.csproj'
-    verbosityRestore: Normal
-    feedsToUse: config
-    nugetConfigPath: 'nuget.config'
-    includeNuGetOrg: true
+    - task: gitversion/setup@0
+      inputs:
+        versionSpec: '5.x'
+      name: GitVersionSetup
+      displayName: 'get gitversion tools'
+      
+    - task: gitversion/execute@0
+      name: GetVersion
+      displayName: 'get version from repository'
 
-# tests
-- task: DotNetCoreCLI@2
-  displayName: 'build tests'
-  inputs:
-    command: 'build'
-    projects: '**/*.Tests.csproj'
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+        verbosityRestore: Normal
+        feedsToUse: config
+        nugetConfigPath: 'nuget.config'
+        includeNuGetOrg: true
 
-- task: VSTest@2
-  displayName: 'run tests'
-  inputs:
-    testSelector: 'testAssemblies'
-    testAssemblyVer2: |
-      **\*.Tests.dll
-      !**\*TestAdapter.dll
-      !**\obj\**
-      !**\ref\**
-    searchFolder: '$(System.DefaultWorkingDirectory)'
+    # tests
+    - task: DotNetCoreCLI@2
+      displayName: 'build tests'
+      inputs:
+        command: 'build'
+        projects: '**/*.Tests.csproj'
 
-# Nuget package
-- task: DotNetCoreCLI@2
-  displayName: 'pack project'
-  inputs:
-    command: 'pack'
-    packagesToPack: 'Capsaicin.RegexUtil/Capsaicin.RegexUtil.csproj'
-    versioningScheme: 'byEnvVar'
-    versionEnvVar: 'GitVersion.FullSemVer'
+    - task: VSTest@2
+      displayName: 'run tests'
+      inputs:
+        testSelector: 'testAssemblies'
+        testAssemblyVer2: |
+          **\*.Tests.dll
+          !**\*TestAdapter.dll
+          !**\obj\**
+          !**\ref\**
+        searchFolder: '$(System.DefaultWorkingDirectory)'
 
-- task: NuGetCommand@2
-  inputs:
-    command: 'push'
-    packagesToPush: $(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
-    nuGetFeedType: 'external'
-    publishVstsFeed: 'Nuget.org | Capsaicin.RegexUtil'
-    verbosityPush: Detailed
+    # Nuget package
+    - task: DotNetCoreCLI@2
+      displayName: 'pack project'
+      inputs:
+        command: 'pack'
+        packagesToPack: 'Capsaicin.RegexUtil/Capsaicin.RegexUtil.csproj'
+        versioningScheme: 'byEnvVar'
+        versionEnvVar: 'GitVersion.FullSemVer'
+        packDirectory: '$(Build.ArtifactStagingDirectory)/packages/nuget'
+        nobuild: true
+
+    - task: NuGetCommand@2
+      inputs:
+        command: 'push'
+        packagesToPush: '$(Build.ArtifactStagingDirectory)/packages/nuget'
+        nuGetFeedType: 'external'
+        publishVstsFeed: 'Nuget.org | Capsaicin.RegexUtil'
+        verbosityPush: Detailed
+
+    - publish: '$(Build.ArtifactStagingDirectory)/packages/nuget'
+      displayName: 'Publish Artifact: $(ArtifactNugetName)'
+      artifact: 'packages-nuget'
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
+- stage: publishpublic
+  dependsOn: build
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  displayName: 'Nuget - Publish Public Packages'
+  jobs:
+  - deployment: publishpublic
+    displayName: 'Nuget - Publish packages to public feed'
+    environment: nuget-publish-public
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: '$(ArtifactNugetName)'
+            displayName: 'Download nuget packages'
+
+          # Error: DotNetCore currently does not support using an encrypted Api Key.
+          # For more information see https://github.com/microsoft/azure-pipelines-tasks/issues/7160
+          - task: DotNetCoreCLI@2
+            displayName: "Publish nuget packages to public feed"
+            inputs:
+              command: 'push'
+              packagesToPush: '$(Agent.BuildDirectory)/$(ArtifactNugetName)/*.nupkg'
+              nuGetFeedType: 'external'
+              publishFeedCredentials: 'Capsaicin.RegexUtil'
