@@ -12,6 +12,7 @@ pool:
 
 variables:
   GitVersion.FullSemVer: ''
+  ArtifactNugetName: 'packages-nuget'
 
 stages:
 - stage: build
