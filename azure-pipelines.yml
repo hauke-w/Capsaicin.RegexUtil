@@ -60,22 +60,14 @@ stages:
 
     # Nuget package
     - task: DotNetCoreCLI@2
-      displayName: 'pack project'
+      displayName: 'Create nuget packages'
       inputs:
         command: 'pack'
-        packagesToPack: 'Capsaicin.RegexUtil/Capsaicin.RegexUtil.csproj'
-        versioningScheme: 'byEnvVar'
-        versionEnvVar: 'GitVersion.FullSemVer'
+        packagesToPack: '**/*.csproj;!**/*.Tests.csproj;!**/*.Examples.csproj'
         packDirectory: '$(Build.ArtifactStagingDirectory)/packages/nuget'
         nobuild: true
-
-    - task: NuGetCommand@2
-      inputs:
-        command: 'push'
-        packagesToPush: '$(Build.ArtifactStagingDirectory)/packages/nuget'
-        nuGetFeedType: 'external'
-        publishVstsFeed: 'Nuget.org | Capsaicin.RegexUtil'
-        verbosityPush: Detailed
+        versioningScheme: 'byEnvVar'
+        versionEnvVar: 'GitVersion.FullSemVer'
 
     - publish: '$(Build.ArtifactStagingDirectory)/packages/nuget'
       displayName: 'Publish Artifact: $(ArtifactNugetName)'
