@@ -41,12 +41,12 @@ stages:
         nugetConfigPath: 'nuget.config'
         includeNuGetOrg: true
 
-    # tests
     - task: DotNetCoreCLI@2
-      displayName: 'build tests'
+      displayName: 'Build solution'
       inputs:
         command: 'build'
-        projects: '**/*.Tests.csproj'
+        projects: '**/*.csproj'
+        arguments: '-c $(BuildConfiguration) --no-restore'
 
     - task: VSTest@2
       displayName: 'run tests'
@@ -59,7 +59,6 @@ stages:
           !**\ref\**
         searchFolder: '$(System.DefaultWorkingDirectory)'
 
-    # Nuget package
     - task: DotNetCoreCLI@2
       displayName: 'Create nuget packages'
       inputs:
