@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -8,21 +9,25 @@ namespace Capsaicin.RegexUtil
 {
     public class CaptureGroupingRoot
     {
-        internal CaptureGroupingRoot(Match match, GroupSpecifier[] groups)
+        internal CaptureGroupingRoot(Match match, GroupSpecifier[] groupSpecifiers)
         {
             Match = match;
-            GroupToIndexMap = new Dictionary<Group, int>(groups.Length);
-            Groups = new Group[groups.Length];
-            for (int i = 0; i < groups.Length; i++)
+            GroupToIndexMap = new Dictionary<Group, int>(groupSpecifiers.Length);
+            GroupsInternal = new Group[groupSpecifiers.Length];
+            for (int i = 0; i < groupSpecifiers.Length; i++)
             {
-                var group = groups[i].GetGroup(Match);
-                Groups[i] = group;
+                var group = groupSpecifiers[i].GetGroup(Match);
+                GroupsInternal[i] = group;
                 GroupToIndexMap.Add(group, i);
             }
         }
 
         public Match Match { get; }
-        public Group[] Groups { get; }
+
+        internal readonly Group[] GroupsInternal;
+        
+        public ImmutableArray<Group> Groups => Groups.ToImmutableArray();
+
         private readonly Dictionary<Group, int> GroupToIndexMap;
 
         internal int[] GetGroupIndexes(Group[] columns)
