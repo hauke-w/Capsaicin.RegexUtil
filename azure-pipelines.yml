@@ -4,8 +4,10 @@
 # https://aka.ms/yaml
 
 trigger:
-- main
-- develop
+  branches:
+    include:
+      - main
+      - develop
 
 pool:
   vmImage: 'windows-latest'
@@ -13,7 +15,7 @@ pool:
 variables:
   GitVersion.FullSemVer: ''
   ArtifactNugetName: 'packages-nuget'
-  BuildConfiguration: Release
+  #BuildConfiguration: Release
 
 stages:
 - stage: build
@@ -73,6 +75,6 @@ stages:
         command: custom
         custom: nuget
         arguments: >
-          push $(Build.ArtifactStagingDirectory)/*.nupkg
+          push $(Build.ArtifactStagingDirectory)/**/*.nupkg
           -s https://api.nuget.org/v3/index.json
           -k $(NuGetApiKey) # Add your Nuget.org ApiKey as secret variable
