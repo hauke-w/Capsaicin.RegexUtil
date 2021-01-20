@@ -95,7 +95,7 @@ namespace Capsaicin.RegexUtil
 
             var expected = expression
                     .Split('|', System.StringSplitOptions.RemoveEmptyEntries)
-                    .Select(it => it == " " ? new string?[0] : it.Split(','))
+                    .Select(it => it == " " ? Array.Empty<string>() : it.Split(','))
                     .ToList();
 
             var testObject = match
