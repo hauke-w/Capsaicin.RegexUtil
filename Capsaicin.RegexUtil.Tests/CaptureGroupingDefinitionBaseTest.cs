@@ -1,4 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -44,7 +46,7 @@ namespace Capsaicin.RegexUtil
             var match = regex.Match("obj1(a=1,b=2),obj2(x=y)");
 
             var testObject = match
-                .Group("id", "property", "name", "value") // for nested groups it is essential to specify all captures that are later used!
+                .Group("id", "property", "name", "value")
                 .By("object")
                 .ThenBy("property");
             var actual = testObject.Flatten("name", "value");
@@ -67,6 +69,115 @@ namespace Capsaicin.RegexUtil
                 Assert.AreEqual(propertyCaptures[i], actualItem.Key);
                 Assert.AreEqual(nameCaptures[i], actualItem.Captures[0]);
                 Assert.AreEqual(valueCaptures[i], actualItem.Captures[1]);
+            }
+        }
+
+        [TestMethod]
+        [DataRow("a1")]
+        [DataRow("a2,b2")]
+        [DataRow("a3,b3,c3")]
+        [DataRow("a4,b4,c4,d4")]
+        [DataRow("a5,b5,c5,d5,e5")]
+        [DataRow("", true)] // no list is matched
+        [DataRow(" ", true)] // one empty list is matched
+        [DataRow(" |2", true)]
+        [DataRow("1| |3", true)]
+        [DataRow("12| ", true)]
+        [DataRow("A1|A2,B2|A3,A3,C3,D3,D3|A4,B4,C4|A5,B5,C5,D5")]
+        [DataRow("A1|A2,B2|A3,A3,C3,D3,D3|A4,B4,C4| |A5,B5,C5,D5", true)]
+        public void IntoTest(string expression, bool allowEmpty = false)
+        {
+            var regex = allowEmpty
+                ? new Regex(@"^(?<list>((?<empty> )|((?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?))(\|(?=\w| ))?)*$")
+                : new Regex(@"^(?<list>(?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?(\|(?=\w))?)*$");
+            var match = regex.Match(expression);
+            Assert.IsTrue(match.Success, "Invalid test data");
+
+            var expected = expression
+                    .Split('|', System.StringSplitOptions.RemoveEmptyEntries)
+                    .Select(it => it == " " ? Array.Empty<string>() : it.Split(','))
+                    .ToList();
+
+            var testObject = match
+                .Group("val1", "val2", "val3", "val4", "val5")
+                .By("list");
+
+            var actual1 = testObject.Into("val1");
+            Verify(actual1, 1, (ICaptureGrouping1 it) => it.Values, DecomposeToArray1);
+
+            var actual2 = testObject.Into("val1", "val2");
+            Verify(actual2, 2, (ICaptureGrouping2 it) => it.Values, DecomposeToArray2);
+
+            var actual3 = testObject.Into("val1", "val2", "val3");
+            Verify(actual3, 3, (ICaptureGrouping3 it) => it.Values, DecomposeToArray3);
+
+            var actual4 = testObject.Into("val1", "val2", "val3", "val4");
+            Verify(actual4, 4, (ICaptureGrouping4 it) => it.Values, DecomposeToArray4);
+
+            var actual5 = testObject.Into("val1", "val2", "val3", "val4", "val5");
+            Verify(actual5, 5, (ICaptureGrouping5 it) => it.Values, DecomposeToArray5);
+
+            string?[] DecomposeToArray1(string? value) => new string?[] { value };
+            string?[] DecomposeToArray2((string? v1, string? v2) value) => new string?[] { value.v1, value.v2 };
+            string?[] DecomposeToArray3((string? v1, string? v2, string? v3) value) => new string?[] { value.v1, value.v2, value.v3 };
+            string?[] DecomposeToArray4((string? v1, string? v2, string? v3, string? v4) value) => new string?[] { value.v1, value.v2, value.v3, value.v4 };
+            string?[] DecomposeToArray5((string? v1, string? v2, string? v3, string? v4, string? v5) value) => new string?[] { value.v1, value.v2, value.v3, value.v4, value.v5 };
+
+            void Verify<T, TValue>(IEnumerable<T> actual, int n, Func<T, IEnumerable<TValue>> getValues, Func<TValue, string?[]> decomposeToArray)
+                where T : ICaptureGrouping
+            {
+                Assert.IsNotNull(actual);
+                var actualAsList = actual.ToList();
+                Assert.AreEqual(expected.Count, actualAsList.Count);
+
+                for (var i = 0; i < actualAsList.Count; i++)
+                {
+                    var actualGrouping = actualAsList[i];
+                    var expectedGrouping = expected[i];
+
+                    var actualCaptures = actualGrouping.Captures?.ToList();
+                    Assert.IsNotNull(actualCaptures);
+
+                    var values = getValues(actualGrouping)?.ToList();
+                    Assert.IsNotNull(values);
+
+                    if (expectedGrouping.Length > 0)
+                    {
+                        Assert.AreEqual(1, actualCaptures!.Count);
+                        Assert.AreEqual(1, values!.Count);
+
+                        var expectedCaptureValues = expectedGrouping.ToList<string?>();
+                        EnsureCollectionSize(expectedCaptureValues, n);
+                        var actualCaptureValues = actualCaptures[0].Select(it => it?.Value).ToList();
+                        CollectionAssert.AreEqual(expectedCaptureValues, actualCaptureValues);
+
+                        var valueAsArray = decomposeToArray(values[0]);
+                        CollectionAssert.AreEqual(expectedCaptureValues, valueAsArray);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, actualCaptures!.Count);
+                        Assert.AreEqual(0, values!.Count);
+                    }
+                }
+            }
+
+            void EnsureCollectionSize<T>(IList<T?> collection, int n)
+            {
+                if (collection.Count > n)
+                {
+                    do
+                    {
+                        collection.RemoveAt(collection.Count - 1);
+                    } while (collection.Count > n);
+                }
+                else
+                {
+                    while (collection.Count < n)
+                    {
+                        collection.Add(default);
+                    }
+                }
             }
         }
     }
