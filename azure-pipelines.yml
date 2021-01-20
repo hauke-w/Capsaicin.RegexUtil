@@ -15,11 +15,10 @@ pool:
 variables:
   GitVersion.FullSemVer: ''
   ArtifactNugetName: 'packages-nuget'
-  name: BuildConfiguration
   ${{ if eq( variables['Build.SourceBranchName'], 'main' ) }}: 
-    value: Release
+    BuildConfiguration: Release
   ${{ if ne( variables['Build.SourceBranchName'], 'main' ) }}: 
-    value: Debug
+    BuildConfiguration: Debug
 
 
 stages:
