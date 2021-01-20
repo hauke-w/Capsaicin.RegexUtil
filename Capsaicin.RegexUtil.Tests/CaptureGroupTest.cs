@@ -49,7 +49,9 @@ namespace Capsaicin.RegexUtil
 
         [TestMethod]
         [DataRow("@PROP=@NAME=URI@ENDNAME;@VALU=myValue@ENDVALU;@PRMT=@ENDPRMT;@ENDPROP;", "NAME,URI|VALU,myValue|PRMT,")]
-        [DataRow("@PROP=@NAME=URI@ENDNAME;@TYPE=@ENDTYPE;@VALU=myValue@ENDVALU;@PRMT=@ENDPRMT;@ENDPROP;", "NAME,URI|TYPE,|VALU,myValue|PRMT,")]
+        [DataRow("@PROP=@NAME=URI@ENDNAME;@TYPE=@ENDTYPE;@VALU=2@ENDVALU;@PRMT=@ENDPRMT;@ENDPROP;", "NAME,URI|TYPE,|VALU,2|PRMT,")]
+        [DataRow("@PROP=@NAME=@ENDNAME;@TYPE=String@ENDTYPE;@VALU=value3@ENDVALU;@PRMT=@ENDPRMT;@ENDPROP;@PROP=@NAME=prop2@ENDNAME;@TYPE=@ENDTYPE;@VALU=@ENDVALU;@PRMT=prmt@ENDPRMT;@ENDPROP;",
+            "NAME,|TYPE,String|VALU,value3|PRMT,|NAME,prop2|TYPE,|VALU,|PRMT,prmt")]
         public void SelectTest(string expression, string expectedCaptureIndexesExpression)
         {
             var regex = new Regex(@"^(?<prop>@PROP=(?<kvp>@(?<name>\w+)=(?<value>([^@]|@(?!\k<name>))+)?@END\k<name>;)+@ENDPROP;)*$");
@@ -58,19 +60,19 @@ namespace Capsaicin.RegexUtil
 
             var testObjects = match.Group("name", "value")
                 .By("prop")
+                .ThenBy("kvp")
                 .ToList();
 
             var expectedData = expectedCaptureIndexesExpression
-                .Split(';')
-                .Select(prop => prop
-                    .Split('|')
-                    .Select(kvp =>
-                    {
-                        var fragments = kvp.Split(',');
-                        return (Name: fragments[0],
-                                Value: string.IsNullOrEmpty(fragments[1]) ? null : fragments[1]);
-                    }).ToList())
-                .ToList();
+                .Split('|')
+                .Select(kvp =>
+                {
+                    var fragments = kvp.Split(',');
+                    return (Name: fragments[0],
+                            Value: string.IsNullOrEmpty(fragments[1]) ? null : fragments[1]);
+                }).ToList();
+
+            Assert.AreEqual(expectedData.Count, testObjects.Count);
 
             for (var i = 0; i < testObjects.Count; i++)
             {
@@ -79,19 +81,14 @@ namespace Capsaicin.RegexUtil
                 Assert.IsNotNull(actual);
                 var actualAsList = actual.ToList();
 
-                var expectedPropertyData = expectedData[i];
-                Assert.AreEqual(expectedPropertyData.Count, actualAsList.Count);
-
-                for (int j = 0; j < expectedPropertyData.Count; j++)
-                {
-                    var actualKvp = actualAsList[j];
-                    Assert.AreEqual(2, actualKvp.Length);          
-                    var actualName = actualKvp[0];
-                    var actualValue = actualKvp[1];
-                    var (expectedName, expectedValue) = expectedPropertyData[j];
-                    Assert.AreEqual(expectedName, actualName);
-                    Assert.AreEqual(expectedValue, actualValue);
-                }                
+                var (expectedName, expectedValue) = expectedData[i];
+                Assert.AreEqual(1, actualAsList.Count);
+                var actualKvp = actualAsList[0];
+                Assert.AreEqual(2, actualKvp.Length);
+                var actualName = actualKvp[0];
+                var actualValue = actualKvp[1];
+                Assert.AreEqual(expectedName, actualName);
+                Assert.AreEqual(expectedValue, actualValue);               
             }
         }
     }
