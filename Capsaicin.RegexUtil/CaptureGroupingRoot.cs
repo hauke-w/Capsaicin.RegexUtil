@@ -13,20 +13,19 @@ namespace Capsaicin.RegexUtil
         {
             Match = match;
             GroupToIndexMap = new Dictionary<Group, int>(groupSpecifiers.Length);
-            GroupsInternal = new Group[groupSpecifiers.Length];
+            var groups = new Group[groupSpecifiers.Length];
             for (int i = 0; i < groupSpecifiers.Length; i++)
             {
                 var group = groupSpecifiers[i].GetGroup(Match);
-                GroupsInternal[i] = group;
+                groups[i] = group;
                 GroupToIndexMap.Add(group, i);
             }
+            Groups = groups.ToImmutableArray();
         }
 
         public Match Match { get; }
-
-        internal readonly Group[] GroupsInternal;
         
-        public ImmutableArray<Group> Groups => Groups.ToImmutableArray();
+        public ImmutableArray<Group> Groups { get; }
 
         private readonly Dictionary<Group, int> GroupToIndexMap;
 
