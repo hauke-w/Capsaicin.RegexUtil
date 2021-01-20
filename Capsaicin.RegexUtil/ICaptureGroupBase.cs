@@ -1,10 +1,11 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Immutable;
+using System.Text.RegularExpressions;
 
 namespace Capsaicin.RegexUtil
 {
     public interface ICaptureGroupBase
     {
-        Capture[] Key { get; }
+        ImmutableArray<Capture> Key { get; }
 
         Capture? First(GroupSpecifier group);
 

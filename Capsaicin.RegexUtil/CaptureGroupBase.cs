@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Immutable;
+using System.Text.RegularExpressions;
 
 namespace Capsaicin.RegexUtil
 {
@@ -7,12 +8,12 @@ namespace Capsaicin.RegexUtil
         internal CaptureGroupBase(CaptureGroupingDefinitionBase definition, Capture[] key)
         {
             Definition = definition;
-            Key = key;
+            Key = key.ToImmutableArray();
         }
 
         protected CaptureGroupingDefinitionBase Definition { get; }
 
-        public Capture[] Key { get; }
+        public ImmutableArray<Capture> Key { get; }
 
         private IParentCaptureGroup? _Parent;
         public IParentCaptureGroup? Parent => _Parent ?? (_Parent = EvaluateParent());
@@ -21,7 +22,7 @@ namespace Capsaicin.RegexUtil
         {
             return Definition.Parent is null 
                 ? null 
-                : new ParentCaptureGroup(Definition.Parent, Key[..^1]);
+                : new ParentCaptureGroup(Definition.Parent, Key.Slice(..^1));
         }
     }
 }
