@@ -33,13 +33,11 @@ stages:
       displayName: 'get version from repository'
 
     - task: DotNetCoreCLI@2
+      displayName: 'Restore packages'
       inputs:
         command: 'restore'
         projects: '**/*.csproj'
-        verbosityRestore: Normal
-        feedsToUse: config
-        nugetConfigPath: 'nuget.config'
-        includeNuGetOrg: true
+        feedsToUse: 'select'
 
     - task: DotNetCoreCLI@2
       displayName: 'Build solution'
@@ -63,7 +61,7 @@ stages:
       displayName: 'Create nuget packages'
       inputs:
         command: 'pack'
-        packagesToPack: '**/*.csproj;!**/*.Tests.csproj;!**/*.Examples.csproj'
+        packagesToPack: 'Capsaicin.RegexUtil/Capsaicin.RegexUtil.csproj'
         packDirectory: '$(Build.ArtifactStagingDirectory)/packages/nuget'
         nobuild: true
         versioningScheme: 'byEnvVar'
