@@ -91,5 +91,62 @@ namespace Capsaicin.RegexUtil
                 Assert.AreEqual(expectedValue, actualValue);               
             }
         }
+
+        [TestMethod]
+        [DataRow("@PROP=@NAME=@ENDNAME;@TYPE=String@ENDTYPE;@VALU=value3@ENDVALU;@PRMT=@ENDPRMT;@ENDPROP;@PROP=@NAME=prop2@ENDNAME;@TYPE=@ENDTYPE;@VALU=@ENDVALU;@PRMT=prmt@ENDPRMT;@ENDPROP;",
+            "NAME,|TYPE,String|VALU,value3|PRMT,;NAME,prop2|TYPE,|VALU,|PRMT,prmt")]
+        [DataRow("@PROP=@NAME=URI@ENDNAME;@VALU=myValue@ENDVALU;@PRMT=@ENDPRMT;@ENDPROP;", "NAME,URI|VALU,myValue|PRMT,")]
+        [DataRow("@PROP=@NAME=URI@ENDNAME;@TYPE=@ENDTYPE;@VALU=2@ENDVALU;@PRMT=@ENDPRMT;@ENDPROP;", "NAME,URI|TYPE,|VALU,2|PRMT,")]        
+        public void GroupNestedByTest(string expression, string expectedCaptureIndexesExpression)
+        {
+            var regex = new Regex(@"^(?<prop>@PROP=(?<kvp>@(?<name>\w+)=(?<value>([^@]|@(?!\k<name>))+)?@END\k<name>;)+@ENDPROP;)*$");
+            var match = regex.Match(expression);
+            Assert.IsTrue(match.Success, "Invalid test data");
+
+            var root = match.Group("name", "value");
+            var propGroupDefinition = root.By("prop");
+
+            var testObjects = propGroupDefinition.ToList();
+
+            var expectedData = expectedCaptureIndexesExpression
+                .Split(';')
+                .Select(prop => prop
+                    .Split('|')
+                    .Select(kvp =>
+                    {
+                        var fragments = kvp.Split(',');
+                        return (Name: fragments[0],
+                                Value: string.IsNullOrEmpty(fragments[1]) ? null : fragments[1]);
+                    }).ToList()
+                ).ToList();
+
+            Assert.AreEqual(expectedData.Count, testObjects.Count);
+
+            int kvpCount = 0;
+            for (var i = 0; i < testObjects.Count; i++)
+            {
+                var testObject = testObjects[i];
+                var actual = testObject.GroupNestedBy("kvp");
+                Assert.IsNotNull(actual);
+
+                var flattended = actual.Flatten("name", "value")?.ToList();
+                Assert.IsNotNull(flattended);
+                var expectedKvps = expectedData[i];
+                Assert.AreEqual(expectedKvps.Count, flattended!.Count);
+
+                for (int j = 0; j < expectedKvps.Count; j++)
+                {
+                    var actualKvp = flattended[j];
+                    Assert.AreSame(match.Groups["kvp"].Captures[kvpCount++], actualKvp.Key);
+                    Assert.AreEqual(2, actualKvp.Count);
+
+                    var actualName = actualKvp.Captures[0]?.Value;
+                    var actualValue = actualKvp.Captures[1]?.Value;
+                    var (expectedName, expectedValue) = expectedKvps[j];
+                    Assert.AreEqual(expectedName, actualName);
+                    Assert.AreEqual(expectedValue, actualValue);
+                }
+            }
+        }
     }
 }

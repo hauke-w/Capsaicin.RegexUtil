@@ -74,6 +74,8 @@ namespace Capsaicin.RegexUtil
             {
             }
 
+            public override int Index => throw new NotImplementedException();
+
             public override CaptureGroupingDefinitionBase Parent => throw new NotImplementedException();
 
             internal override IList<CaptureRowIndexes> GetCaptureIndexesWithinGroupedBy(Group[] columns) => throw new NotImplementedException();

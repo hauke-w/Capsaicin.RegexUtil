@@ -5,43 +5,74 @@ using System.Text.RegularExpressions;
 
 namespace Capsaicin.RegexUtil
 {
-
-    public class NestedCaptureGroupingDefinition : CaptureGroupingDefinitionBase, IEnumerable<CaptureGroup>
+    /// <summary>
+    /// A <see cref="NestedCaptureGroupingDefinition"/> defined for a <see cref="CaptureGroup"/>.
+    /// </summary>
+    public sealed class PartialNestedCaptureGroupingDefinition : NestedCaptureGroupingDefinition
     {
-        internal NestedCaptureGroupingDefinition(CaptureGroupingDefinitionBase parent, Group groupedBy)
-            : base(parent.Root, groupedBy)
+        internal PartialNestedCaptureGroupingDefinition(CaptureGroupingDefinitionBase parent, Group groupedBy, int index) : base(parent, groupedBy)
         {
-            Parent = parent;
+            Index = index;
         }
 
-        public override CaptureGroupingDefinitionBase Parent { get; }
+        public sealed override int Index { get; }
 
-        public override int Index => 0;
-
-        protected List<CaptureGroupingDefinitionBase> GetHierarchy()
+        private int[] GetKeyIndexes(Group[] key)
         {
-            var result = new List<CaptureGroupingDefinitionBase>()
-            {
-                this
-            };
+            var result = new int[key.Length];
+            result[^2] = Index;
 
-            CaptureGroupingDefinitionBase? parent = Parent;
-            do
-            {
-                result.Add(Parent);
-                parent = parent.Parent;
-            } while (parent is not null);
+            var constraint = key[^2].Captures[Index];
+            int max = constraint.Index + constraint.Length;
 
-            result.Reverse();
+            var n = result.Length -2;
+            bool found;
+            for (int i = 0; i < n; i++)
+            {
+                found = false;
+                var captures = key[i].Captures;
+                for (int j = 0; j < captures.Count; j++)
+                {
+                    var capture = captures[j];
+                    if (capture.Index <= constraint.Index && capture.Index + capture.Length >= max)
+                    {
+                        result[i] = j;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    result[i] = -1;
+                }
+            }
+
+            var lastCaptures = key[^1].Captures;
+            found = false;
+            
+            for (int j = 0; j < lastCaptures.Count; j++)
+            {
+                var capture = lastCaptures[j];
+                if (capture.Index >= constraint.Index && capture.Index + capture.Length <= max)
+                {
+                    result[^1] = j;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                result[^1] = -1;
+            }
+
             return result;
         }
-
 
         internal override IList<CaptureRowIndexes> GetCaptureIndexesWithinGroupedBy(Group[] columns)
         {
             var hierarchy = GetHierarchy();
             var keyHierarchy = hierarchy.Select(it => it.GroupedBy).ToArray();
-            var keySearchIndexes = new int[keyHierarchy.Length];
+            var keySearchIndexes = GetKeyIndexes(keyHierarchy);
             var columnSearchIndexes = new int[columns.Length];
             var result = new List<CaptureRowIndexes>();
 
@@ -59,7 +90,7 @@ namespace Capsaicin.RegexUtil
             {
                 var currentCaptureIndexOfFirst = keySearchIndexes[0];
                 var firstKeyGroup = keyHierarchy[0];
-                while (currentCaptureIndexOfFirst < firstKeyGroup.Captures.Count)
+                if (currentCaptureIndexOfFirst >= 0 && currentCaptureIndexOfFirst < firstKeyGroup.Captures.Count)
                 {
                     var captureOfFirst = firstKeyGroup.Captures[currentCaptureIndexOfFirst];
                     int min = captureOfFirst.Index;

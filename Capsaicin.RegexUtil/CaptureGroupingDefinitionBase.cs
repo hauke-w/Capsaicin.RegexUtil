@@ -27,6 +27,8 @@ namespace Capsaicin.RegexUtil
 
         internal bool IsCaptureIndexesLoaded => _CaptureIndexes is not null;
 
+        public abstract int Index { get; }
+
         //public IEnumerable<CaptureGroup> GetCaptureGroups()
         //{
         //    foreach (var item in this)
@@ -78,11 +80,7 @@ namespace Capsaicin.RegexUtil
             }
 
             var groups = Root.GetGroups(toInclude);
-            var columnIndexMap = new int[toInclude.Length];
-            for (int i = 0; i < toInclude.Length; i++)
-            {
-                columnIndexMap[i] = Root.IndexOf(groups[i]);
-            }
+            var columnIndexMap = Root.GetGroupIndexes(groups);
 
             foreach (var currentCaptureGroup in this)
             {

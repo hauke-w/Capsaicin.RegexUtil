@@ -12,7 +12,9 @@ namespace Capsaicin.RegexUtil
         {
         }
 
-        public override sealed CaptureGroupingDefinitionBase? Parent => null;
+        public sealed override CaptureGroupingDefinitionBase? Parent => null;
+
+        public sealed override int Index => 0;
 
         internal override IList<CaptureRowIndexes> GetCaptureIndexesWithinGroupedBy(Group[] columns)
         {

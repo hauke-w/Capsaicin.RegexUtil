@@ -15,7 +15,9 @@ namespace Capsaicin.RegexUtil
         
         private Match Match => Definition.Root.Match;        
 
-        Capture ICaptureGroup1.Key => Key[^1];
+        Capture ICaptureGroup1.Key => ConstrainingCapture;
+
+        public Capture ConstrainingCapture => Key[^1];
 
         internal int[] CaptureIndexes => Definition.GetCaptureIndexes()[Index].CaptureIndexes;
 
@@ -24,19 +26,18 @@ namespace Capsaicin.RegexUtil
         public NestedCaptureGroupingDefinition GroupNestedBy(GroupSpecifier group)
         {
             var groupedBy = group.GetGroup(Match);
-            return new NestedCaptureGroupingDefinition(Definition, groupedBy);
+            return new PartialNestedCaptureGroupingDefinition(Definition, groupedBy, Index);
         }
 
         internal CaptureGrouping Into(Group[] columns, int[] captureIndexes)
         {
             var rows = GetRows(columns, captureIndexes);
-            var key = Key[^1];
-            return new CaptureGrouping(this, key, rows);
+            return new CaptureGrouping(this, ConstrainingCapture, rows);
         }
 
         private IEnumerable<Capture?[]> GetRows(Group[] columns, int[] captureIndexes)
         {
-            var keyCapture = Key[^1];
+            var keyCapture = ConstrainingCapture;
             int max = keyCapture.Index + keyCapture.Length;
             bool notAtEnd;
             do
@@ -114,7 +115,7 @@ namespace Capsaicin.RegexUtil
             }
 
             var rows = GetRows(columns, captureIndexes);
-            return new CaptureGrouping(this, Key[^1], rows);
+            return new CaptureGrouping(this, ConstrainingCapture, rows);
         }
 
         /// <summary>
