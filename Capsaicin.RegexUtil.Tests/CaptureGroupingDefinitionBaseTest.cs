@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -44,7 +45,7 @@ namespace Capsaicin.RegexUtil
             var match = regex.Match("obj1(a=1,b=2),obj2(x=y)");
 
             var testObject = match
-                .Group("id", "property", "name", "value") // for nested groups it is essential to specify all captures that are later used!
+                .Group("id", "property", "name", "value")
                 .By("object")
                 .ThenBy("property");
             var actual = testObject.Flatten("name", "value");
@@ -67,6 +68,97 @@ namespace Capsaicin.RegexUtil
                 Assert.AreEqual(propertyCaptures[i], actualItem.Key);
                 Assert.AreEqual(nameCaptures[i], actualItem.Captures[0]);
                 Assert.AreEqual(valueCaptures[i], actualItem.Captures[1]);
+            }
+        }
+
+        [TestMethod]
+        [DataRow(" |2", true)]
+        [DataRow("a1")]
+        [DataRow("a2,b2")]
+        [DataRow("a3,b3,c3")]
+        [DataRow("a4,b4,c4,d4")]
+        [DataRow("a5,b5,c5,d5,e5")]
+        [DataRow("", true)] // no list is matched
+        [DataRow(" ", true)] // one empty list is matched
+        [DataRow("1| |3", true)]
+        [DataRow("12| ", true)]
+        [DataRow("A1|A2,B2|A3,A3,C3,D3,D3|A4,B4,C4|A5,B5,C5,D5")]
+        [DataRow("A1|A2,B2|A3,A3,C3,D3,D3|A4,B4,C4| |A5,B5,C5,D5", true)]
+        public void IntoTest(string expression, bool allowEmpty=false)
+        {
+            var regex = allowEmpty 
+                ? new Regex(@"^(?<list>((?<empty> )|((?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?))(\|(?=\w| ))?)*$")
+                : new Regex(@"^(?<list>(?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?(\|(?=\w))?)*$");
+            var match = regex.Match(expression);
+            Assert.IsTrue(match.Success, "Invalid test data");
+
+            var expected = expression
+                    .Split('|', System.StringSplitOptions.RemoveEmptyEntries)
+                    .Select(it => it == " " ? new string?[0] : it.Split(','))
+                    .ToList();
+
+            var testObject = match
+                .Group("val1", "val2", "val3", "val4", "val5")
+                .By("list");
+
+            var actual1 = testObject.Into("val1");
+            Verify(actual1, 1);
+
+            var actual2 = testObject.Into("val1", "val2");
+            Verify(actual2, 2);
+
+            var actual3 = testObject.Into("val1", "val2", "val3");
+            Verify(actual3, 3);
+
+            var actual4 = testObject.Into("val1", "val2", "val3", "val4");
+            Verify(actual4, 4);
+
+            var actual5 = testObject.Into("val1", "val2", "val3", "val4", "val5");
+            Verify(actual5, 5);
+
+            void Verify(IEnumerable<ICaptureGrouping> actual, int n)
+            {
+                Assert.IsNotNull(actual);
+                var actualAsList = actual.ToList();
+                Assert.AreEqual(expected.Count, actualAsList.Count);
+
+                for (var i = 0; i < actualAsList.Count; i++)
+                {
+                    var actualGrouping = actualAsList[i];
+                    var expectedGrouping = expected[i];
+                    var actualCaptures = actualGrouping.Captures?.ToList();
+                    Assert.IsNotNull(actualCaptures);
+                    if (expectedGrouping.Length > 0)
+                    {
+                        Assert.AreEqual(1, actualCaptures!.Count);
+                        var expectedCaptureValues = expectedGrouping.ToList<string?>();
+                        EnsureCollectionSize(expectedCaptureValues, n);
+                        var actualCaptureValues = actualCaptures[0].Select(it => it?.Value).ToList();
+                        CollectionAssert.AreEqual(expectedCaptureValues, actualCaptureValues);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, actualCaptures!.Count);
+                    }
+                }
+            }
+
+            void EnsureCollectionSize<T>(IList<T?> collection, int n)
+            {
+                if (collection.Count > n)
+                {
+                    do
+                    {
+                        collection.RemoveAt(collection.Count - 1);
+                    } while (collection.Count > n);
+                }
+                else
+                {
+                    while (collection.Count < n)
+                    {
+                        collection.Add(default);
+                    }
+                }
             }
         }
     }
