@@ -73,7 +73,6 @@ namespace Capsaicin.RegexUtil
         }
 
         [TestMethod]
-        [DataRow(" |2", true)]
         [DataRow("a1")]
         [DataRow("a2,b2")]
         [DataRow("a3,b3,c3")]
@@ -81,13 +80,14 @@ namespace Capsaicin.RegexUtil
         [DataRow("a5,b5,c5,d5,e5")]
         [DataRow("", true)] // no list is matched
         [DataRow(" ", true)] // one empty list is matched
+        [DataRow(" |2", true)]
         [DataRow("1| |3", true)]
         [DataRow("12| ", true)]
         [DataRow("A1|A2,B2|A3,A3,C3,D3,D3|A4,B4,C4|A5,B5,C5,D5")]
         [DataRow("A1|A2,B2|A3,A3,C3,D3,D3|A4,B4,C4| |A5,B5,C5,D5", true)]
-        public void IntoTest(string expression, bool allowEmpty=false)
+        public void IntoTest(string expression, bool allowEmpty = false)
         {
-            var regex = allowEmpty 
+            var regex = allowEmpty
                 ? new Regex(@"^(?<list>((?<empty> )|((?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?))(\|(?=\w| ))?)*$")
                 : new Regex(@"^(?<list>(?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?(\|(?=\w))?)*$");
             var match = regex.Match(expression);
@@ -103,8 +103,8 @@ namespace Capsaicin.RegexUtil
                 .By("list");
 
             var actual1 = testObject.Into("val1");
-            Verify(actual1, 1, it=>it.Values);
-            
+            Verify(actual1, 1, it => it.Values);
+
             var actual2 = testObject.Into("val1", "val2");
             Verify(actual2, 2, it => it.Values);
 
@@ -117,8 +117,8 @@ namespace Capsaicin.RegexUtil
             var actual5 = testObject.Into("val1", "val2", "val3", "val4", "val5");
             Verify(actual5, 5, it => it.Values);
 
-            void Verify<T, TValue>(IEnumerable<T> actual, int n, Func<T, IEnumerable<TValue>> func)
-                where T: ICaptureGrouping
+            void Verify<T, TValue>(IEnumerable<T> actual, int n, Func<T, IEnumerable<TValue>> valuesFunc)
+                where T : ICaptureGrouping
             {
                 Assert.IsNotNull(actual);
                 var actualAsList = actual.ToList();
@@ -130,6 +130,10 @@ namespace Capsaicin.RegexUtil
                     var expectedGrouping = expected[i];
                     var actualCaptures = actualGrouping.Captures?.ToList();
                     Assert.IsNotNull(actualCaptures);
+
+                    var values = valuesFunc(actualGrouping)?.ToList();
+                    Assert.IsNotNull(values);
+
                     if (expectedGrouping.Length > 0)
                     {
                         Assert.AreEqual(1, actualCaptures!.Count);
@@ -137,10 +141,12 @@ namespace Capsaicin.RegexUtil
                         EnsureCollectionSize(expectedCaptureValues, n);
                         var actualCaptureValues = actualCaptures[0].Select(it => it?.Value).ToList();
                         CollectionAssert.AreEqual(expectedCaptureValues, actualCaptureValues);
+                        CollectionAssert.AreEqual(expectedCaptureValues, values);
                     }
                     else
                     {
                         Assert.AreEqual(0, actualCaptures!.Count);
+                        Assert.AreEqual(0, values!.Count);
                     }
                 }
             }
