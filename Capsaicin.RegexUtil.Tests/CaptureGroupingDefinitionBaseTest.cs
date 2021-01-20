@@ -103,21 +103,27 @@ namespace Capsaicin.RegexUtil
                 .By("list");
 
             var actual1 = testObject.Into("val1");
-            Verify(actual1, 1, it => it.Values);
+            Verify(actual1, 1, (ICaptureGrouping1 it) => it.Values, DecomposeToArray1);
 
             var actual2 = testObject.Into("val1", "val2");
-            Verify(actual2, 2, it => it.Values);
+            Verify(actual2, 2, (ICaptureGrouping2 it) => it.Values, DecomposeToArray2);
 
             var actual3 = testObject.Into("val1", "val2", "val3");
-            Verify(actual3, 3, it => it.Values);
+            Verify(actual3, 3, (ICaptureGrouping3 it) => it.Values, DecomposeToArray3);
 
             var actual4 = testObject.Into("val1", "val2", "val3", "val4");
-            Verify(actual4, 4, it => it.Values);
+            Verify(actual4, 4, (ICaptureGrouping4 it) => it.Values, DecomposeToArray4);
 
             var actual5 = testObject.Into("val1", "val2", "val3", "val4", "val5");
-            Verify(actual5, 5, it => it.Values);
+            Verify(actual5, 5, (ICaptureGrouping5 it) => it.Values, DecomposeToArray5);
 
-            void Verify<T, TValue>(IEnumerable<T> actual, int n, Func<T, IEnumerable<TValue>> valuesFunc)
+            string?[] DecomposeToArray1(string? value) => new string?[] { value };
+            string?[] DecomposeToArray2((string? v1, string? v2) value) => new string?[] { value.v1, value.v2 };
+            string?[] DecomposeToArray3((string? v1, string? v2, string? v3) value) => new string?[] { value.v1, value.v2, value.v3 };
+            string?[] DecomposeToArray4((string? v1, string? v2, string? v3, string? v4) value) => new string?[] { value.v1, value.v2, value.v3, value.v4 };
+            string?[] DecomposeToArray5((string? v1, string? v2, string? v3, string? v4, string? v5) value) => new string?[] { value.v1, value.v2, value.v3, value.v4, value.v5 };
+
+            void Verify<T, TValue>(IEnumerable<T> actual, int n, Func<T, IEnumerable<TValue>> getValues, Func<TValue, string?[]> decomposeToArray)
                 where T : ICaptureGrouping
             {
                 Assert.IsNotNull(actual);
@@ -128,20 +134,25 @@ namespace Capsaicin.RegexUtil
                 {
                     var actualGrouping = actualAsList[i];
                     var expectedGrouping = expected[i];
+
                     var actualCaptures = actualGrouping.Captures?.ToList();
                     Assert.IsNotNull(actualCaptures);
 
-                    var values = valuesFunc(actualGrouping)?.ToList();
+                    var values = getValues(actualGrouping)?.ToList();
                     Assert.IsNotNull(values);
 
                     if (expectedGrouping.Length > 0)
                     {
                         Assert.AreEqual(1, actualCaptures!.Count);
+                        Assert.AreEqual(1, values!.Count);
+
                         var expectedCaptureValues = expectedGrouping.ToList();
                         EnsureCollectionSize(expectedCaptureValues, n);
                         var actualCaptureValues = actualCaptures[0].Select(it => it?.Value).ToList();
                         CollectionAssert.AreEqual(expectedCaptureValues, actualCaptureValues);
-                        CollectionAssert.AreEqual(expectedCaptureValues, values);
+
+                        var valueAsArray = decomposeToArray(values[0]);
+                        CollectionAssert.AreEqual(expectedCaptureValues, valueAsArray);
                     }
                     else
                     {

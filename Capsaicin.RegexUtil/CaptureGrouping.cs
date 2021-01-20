@@ -13,7 +13,7 @@ namespace Capsaicin.RegexUtil
 
     public interface ICaptureGrouping2 : ICaptureGrouping1
     {
-        new IEnumerable<(string? Value1,string? Value2)> Values
+        new IEnumerable<(string? Value1, string? Value2)> Values
             => Captures.Select(c => (c[0]?.Value, c[1]?.Value));
     }
 
@@ -41,7 +41,7 @@ namespace Capsaicin.RegexUtil
         {
             Grouping = captureGroup;
             Key = key;
-            Captures = captures;
+            Captures = captures.ToList();
         }
 
         public CaptureGroup Grouping { get; }
@@ -49,7 +49,8 @@ namespace Capsaicin.RegexUtil
         public IParentCaptureGroup? Parent => Grouping.Parent;
 
         public Capture Key { get; }
-        public IEnumerable<Capture?[]> Captures { get; }
+
+        public List<Capture?[]> Captures { get; }
 
         public IEnumerator<Capture?[]> GetEnumerator() => Captures.GetEnumerator();
 
@@ -58,7 +59,7 @@ namespace Capsaicin.RegexUtil
         public void Deconstruct(out Capture key, out List<Capture?[]> captures)
         {
             key = Key;
-            captures = Captures.ToList();
+            captures = Captures;
         }
     }
 }

@@ -7,7 +7,7 @@ namespace Capsaicin.RegexUtil
     public interface ICaptureGrouping : IGrouping<Capture, Capture?[]>
     {
         CaptureGroup Grouping { get; }
-        IEnumerable<Capture?[]> Captures { get; }
+        List<Capture?[]> Captures { get; }
 
         IParentCaptureGroup? Parent { get; }
 
