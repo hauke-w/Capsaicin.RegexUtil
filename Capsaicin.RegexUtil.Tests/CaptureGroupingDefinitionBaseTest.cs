@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -102,21 +103,22 @@ namespace Capsaicin.RegexUtil
                 .By("list");
 
             var actual1 = testObject.Into("val1");
-            Verify(actual1, 1);
-
+            Verify(actual1, 1, it=>it.Values);
+            
             var actual2 = testObject.Into("val1", "val2");
-            Verify(actual2, 2);
+            Verify(actual2, 2, it => it.Values);
 
             var actual3 = testObject.Into("val1", "val2", "val3");
-            Verify(actual3, 3);
+            Verify(actual3, 3, it => it.Values);
 
             var actual4 = testObject.Into("val1", "val2", "val3", "val4");
-            Verify(actual4, 4);
+            Verify(actual4, 4, it => it.Values);
 
             var actual5 = testObject.Into("val1", "val2", "val3", "val4", "val5");
-            Verify(actual5, 5);
+            Verify(actual5, 5, it => it.Values);
 
-            void Verify(IEnumerable<ICaptureGrouping> actual, int n)
+            void Verify<T, TValue>(IEnumerable<T> actual, int n, Func<T, IEnumerable<TValue>> func)
+                where T: ICaptureGrouping
             {
                 Assert.IsNotNull(actual);
                 var actualAsList = actual.ToList();
@@ -131,7 +133,7 @@ namespace Capsaicin.RegexUtil
                     if (expectedGrouping.Length > 0)
                     {
                         Assert.AreEqual(1, actualCaptures!.Count);
-                        var expectedCaptureValues = expectedGrouping.ToList<string?>();
+                        var expectedCaptureValues = expectedGrouping.ToList();
                         EnsureCollectionSize(expectedCaptureValues, n);
                         var actualCaptureValues = actualCaptures[0].Select(it => it?.Value).ToList();
                         CollectionAssert.AreEqual(expectedCaptureValues, actualCaptureValues);
