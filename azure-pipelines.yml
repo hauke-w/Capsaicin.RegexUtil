@@ -68,43 +68,12 @@ stages:
         versioningScheme: 'byEnvVar'
         versionEnvVar: 'GitVersion.FullSemVer'
 
-    - publish: '$(Build.ArtifactStagingDirectory)/packages/nuget'
-      displayName: 'Publish Artifact: $(ArtifactNugetName)'
-      artifact: 'packages-nuget'
-      condition: succeeded()
-
-- stage: publishpublic
-  dependsOn: build
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-  displayName: 'Nuget - Publish Public Packages'
-  jobs:
-  - deployment: publishpublic
-    displayName: 'Nuget - Publish packages to public feed'
-    environment: nuget-publish-public
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - download: current
-            artifact: '$(ArtifactNugetName)'
-            displayName: 'Download nuget packages'
-
-          # Error: DotNetCore currently does not support using an encrypted Api Key.
-          # For more information see https://github.com/microsoft/azure-pipelines-tasks/issues/7160
-          #- task: DotNetCoreCLI@2
-          #  displayName: "Publish nuget packages to public feed"
-          #  inputs:
-          #    command: 'push'
-          #    packagesToPush: '$(Agent.BuildDirectory)/$(ArtifactNugetName)/*.nupkg'
-          #    nuGetFeedType: 'external'
-          #    publishFeedCredentials: 'Capsaicin.RegexUtil'
-          
-          - task: DotNetCoreCLI@2
-            displayName: Push Nuget Package
-            inputs:
-              command: custom
-              custom: nuget
-              arguments: >
-                push $(Agent.BuildDirectory)/$(ArtifactNugetName)/*.nupkg
-                -s https://api.nuget.org/v3/index.json
-                -k $(NuGetApiKey) # Add your Nuget.org ApiKey as secret variable
+    - task: DotNetCoreCLI@2
+      displayName: Push Nuget Package
+      inputs:
+        command: custom
+        custom: nuget
+        arguments: >
+          push $(Build.ArtifactStagingDirectory)/packages/nuget/*.nupkg
+          -s https://api.nuget.org/v3/index.json
+          -k $(NuGetApiKey) # Add your Nuget.org ApiKey as secret variable
