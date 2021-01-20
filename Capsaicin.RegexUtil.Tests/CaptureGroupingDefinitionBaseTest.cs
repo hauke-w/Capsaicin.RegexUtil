@@ -146,7 +146,7 @@ namespace Capsaicin.RegexUtil
                         Assert.AreEqual(1, actualCaptures!.Count);
                         Assert.AreEqual(1, values!.Count);
 
-                        var expectedCaptureValues = expectedGrouping.ToList();
+                        var expectedCaptureValues = expectedGrouping.ToList<string?>();
                         EnsureCollectionSize(expectedCaptureValues, n);
                         var actualCaptureValues = actualCaptures[0].Select(it => it?.Value).ToList();
                         CollectionAssert.AreEqual(expectedCaptureValues, actualCaptureValues);
