@@ -1,4 +1,8 @@
 # Capsaicin.RegexUtil
+This utility helps walking the tree of the captures of a regular match. It helps in following scenarios without having to deal with the position (indexes) of captures in the original string:
+- A regular expression with optional groups is to be iterated with captures "aligned"
+- hierarchical iteratation of the captures tree 
+- flatten the capture tree into tuples
 
 ## Usage
 ### Grouping matches
