@@ -21,6 +21,7 @@ variables:
   ${{ if ne( variables['Build.SourceBranchName'], 'main' ) }}: 
     value: Debug
 
+
 stages:
 - stage: build
   displayName: 'Build Nuget Package'
@@ -28,6 +29,9 @@ stages:
   - job: CI_Build
     displayName: 'Nuget - Build, Pack and Test'    
     steps:
+
+    - script: echo 'Build configuration is $(BuildConfiguration) source branch is 'variables['Build.SourceBranchName']
+      displayName: 'Printing the BuildConfiguration variable'
 
     - task: gitversion/setup@0
       inputs:
