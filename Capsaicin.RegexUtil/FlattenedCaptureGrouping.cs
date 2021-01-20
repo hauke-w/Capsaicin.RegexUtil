@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 
 namespace Capsaicin.RegexUtil
@@ -11,14 +12,14 @@ namespace Capsaicin.RegexUtil
         {
             CaptureGroup = captureGroup;
             Key = key;
-            Captures = captures;
+            Captures = captures.ToImmutableArray();
         }
 
         public CaptureGroup CaptureGroup { get; }
 
         public Capture Key { get; }
 
-        public Capture?[] Captures { get; }
+        public ImmutableArray<Capture?> Captures { get; }
 
         public int Count => Captures.Length;
 
