@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -41,7 +42,7 @@ namespace Capsaicin.RegexUtil
         {
             Grouping = captureGroup;
             Key = key;
-            Captures = captures.ToList();
+            Captures = captures.ToImmutableList();
         }
 
         public CaptureGroup Grouping { get; }
@@ -50,13 +51,13 @@ namespace Capsaicin.RegexUtil
 
         public Capture Key { get; }
 
-        public List<Capture?[]> Captures { get; }
+        public ImmutableList<Capture?[]> Captures { get; }
 
         public IEnumerator<Capture?[]> GetEnumerator() => Captures.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public void Deconstruct(out Capture key, out List<Capture?[]> captures)
+        public void Deconstruct(out Capture key, out ImmutableList<Capture?[]> captures)
         {
             key = Key;
             captures = Captures;

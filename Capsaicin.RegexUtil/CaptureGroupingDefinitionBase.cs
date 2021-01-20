@@ -23,7 +23,7 @@ namespace Capsaicin.RegexUtil
 
         private IList<CaptureRowIndexes>? _CaptureIndexes;
         internal IList<CaptureRowIndexes> GetCaptureIndexes() 
-            => _CaptureIndexes ?? (_CaptureIndexes = GetCaptureIndexesWithinGroupedBy(Root.Groups));
+            => _CaptureIndexes ?? (_CaptureIndexes = GetCaptureIndexesWithinGroupedBy(Root.Groups.ToArray()));
 
         internal bool IsCaptureIndexesLoaded => _CaptureIndexes is not null;
 
