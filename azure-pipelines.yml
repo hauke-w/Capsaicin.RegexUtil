@@ -30,7 +30,7 @@ stages:
     displayName: 'Nuget - Build, Pack and Test'    
     steps:
 
-    - script: echo 'Build configuration is $(BuildConfiguration) source branch is 'variables['Build.SourceBranchName']
+    - script: echo $(BuildConfiguration)
       displayName: 'Printing the BuildConfiguration variable'
 
     - task: gitversion/setup@0
