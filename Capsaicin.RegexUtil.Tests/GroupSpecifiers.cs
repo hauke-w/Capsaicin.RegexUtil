@@ -1,4 +1,6 @@
-﻿namespace Capsaicin.RegexUtil
+﻿using System;
+
+namespace Capsaicin.RegexUtil
 {
     internal static class GroupSpecifiers
     {
@@ -17,7 +19,8 @@
             return value switch
             {
                 string groupName => new NamedGroupSpecifier(groupName),
-                int groupIndex => new IndexedGroupSpecifier(groupIndex)
+                int groupIndex => new IndexedGroupSpecifier(groupIndex),
+                _ => throw new ArgumentException($"Only objects of type string and int are supported.", nameof(value)),
             };
         }
     }
