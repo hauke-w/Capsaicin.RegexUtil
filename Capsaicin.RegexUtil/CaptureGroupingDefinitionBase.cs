@@ -7,7 +7,8 @@ using System.Text.RegularExpressions;
 
 namespace Capsaicin.RegexUtil
 {
-    public abstract class CaptureGroupingDefinitionBase : IEnumerable<CaptureGroup>
+    // we do not implement IEnumerable<CaptureGroup> here because it would introduce ambiguities in sub class with more specific enumeration.
+    public abstract class CaptureGroupingDefinitionBase : IEnumerable
     {
         internal CaptureGroupingDefinitionBase(CaptureGroupingRoot captureGroupingRoot, Group groupedBy)
         {
@@ -25,6 +26,14 @@ namespace Capsaicin.RegexUtil
             => _CaptureIndexes ?? (_CaptureIndexes = GetCaptureIndexesWithinGroupedBy(Root.Groups));
 
         internal bool IsCaptureIndexesLoaded => _CaptureIndexes is not null;
+
+        //public IEnumerable<CaptureGroup> GetCaptureGroups()
+        //{
+        //    foreach (var item in this)
+        //    {
+        //        yield return item;
+        //    }
+        //}
 
         public IEnumerator<CaptureGroup> GetEnumerator()
         {

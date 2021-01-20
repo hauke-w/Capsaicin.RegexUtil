@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Capsaicin.RegexUtil
 {
-    public sealed class NestedCaptureGroupingDefinition : CaptureGroupingDefinitionBase
+    public sealed class NestedCaptureGroupingDefinition : CaptureGroupingDefinitionBase, IEnumerable<CaptureGroup>
     {
         public NestedCaptureGroupingDefinition(CaptureGroupingDefinitionBase parent, Group groupedBy)
             : base(parent.Root, groupedBy)

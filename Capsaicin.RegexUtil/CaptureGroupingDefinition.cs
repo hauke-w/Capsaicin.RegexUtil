@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -30,6 +31,7 @@ namespace Capsaicin.RegexUtil
             return result;
         }
 
+        // GetEnumerator is redefined with more specific Type
         public new IEnumerator<ICaptureGroup1> GetEnumerator() => base.GetEnumerator();
     }
 }
