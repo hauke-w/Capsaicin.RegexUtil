@@ -29,7 +29,7 @@ stages:
     displayName: 'Nuget - Build, Pack and Test'    
     steps:
 
-    - script: echo $(BuildConfiguration)
+    - script: echo 'Build configuration is $(BuildConfiguration)'
       displayName: 'Printing the BuildConfiguration variable'
 
     - task: gitversion/setup@0
