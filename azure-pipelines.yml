@@ -63,7 +63,6 @@ stages:
       inputs:
         command: 'pack'
         packagesToPack: '**/*.csproj;!**/*.Tests.csproj;!**/*.Examples.csproj'
-        packDirectory: '$(Build.ArtifactStagingDirectory)/packages/nuget'
         nobuild: true
         versioningScheme: 'byEnvVar'
         versionEnvVar: 'GitVersion.FullSemVer'
@@ -74,6 +73,6 @@ stages:
         command: custom
         custom: nuget
         arguments: >
-          push $(Build.ArtifactStagingDirectory)/packages/nuget/*.nupkg
+          push $(Build.ArtifactStagingDirectory)/*.nupkg
           -s https://api.nuget.org/v3/index.json
           -k $(NuGetApiKey) # Add your Nuget.org ApiKey as secret variable
