@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -8,7 +9,8 @@ using System.Text.RegularExpressions;
 namespace Capsaicin.RegexUtil
 {
     // we do not implement IEnumerable<CaptureGroup> here because it would introduce ambiguities in sub class with more specific enumeration.
-    public abstract class CaptureGroupingDefinitionBase : IEnumerable
+    public abstract class CaptureGroupingDefinitionBase : IEnumerable<CaptureGrouping>, ICaptureGroupingDefinition,
+        ICaptureGroupingDefinition1, ICaptureGroupingDefinition2, ICaptureGroupingDefinition3, ICaptureGroupingDefinition4, ICaptureGroupingDefinition5
     {
         internal CaptureGroupingDefinitionBase(CaptureGroupingRoot captureGroupingRoot, Group groupedBy)
         {
@@ -22,31 +24,31 @@ namespace Capsaicin.RegexUtil
         public abstract CaptureGroupingDefinitionBase? Parent { get; }
 
         private IList<CaptureRowIndexes>? _CaptureIndexes;
-        internal IList<CaptureRowIndexes> GetCaptureIndexes() 
+        internal IList<CaptureRowIndexes> GetCaptureIndexes()
             => _CaptureIndexes ?? (_CaptureIndexes = GetCaptureIndexesWithinGroupedBy(Root.Groups.ToArray()));
 
         internal bool IsCaptureIndexesLoaded => _CaptureIndexes is not null;
 
         public abstract int Index { get; }
 
-        //public IEnumerable<CaptureGroup> GetCaptureGroups()
-        //{
-        //    foreach (var item in this)
-        //    {
-        //        yield return item;
-        //    }
-        //}
-
-        public IEnumerator<CaptureGroup> GetEnumerator()
+        public IEnumerable<CaptureGroup> CaptureGroups
         {
-            var captureIndexes = GetCaptureIndexes();
-            int nRows = captureIndexes.Count;
-            for (int row = 0; row < nRows; row++)
+            get
             {
-                var key = captureIndexes[row].Key;
-                yield return new CaptureGroup(this, key, row);
+                var captureIndexes = GetCaptureIndexes();
+                int nRows = captureIndexes.Count;
+                for (int row = 0; row < nRows; row++)
+                {
+                    var key = captureIndexes[row].Key;
+                    yield return new CaptureGroup(this, key, row);
+                }
             }
         }
+
+        public ImmutableArray<Group> SelectedGroups => Root.Groups;
+
+        public IEnumerator<CaptureGrouping> GetEnumerator()
+            => Into(SelectedGroups.ToArray()).GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -57,12 +59,12 @@ namespace Capsaicin.RegexUtil
             => Into(new[] { toInclude });
 
         public IEnumerable<ICaptureGrouping2> Into(GroupSpecifier toInclude1, GroupSpecifier toInclude2)
-            => Into( new[] { toInclude1, toInclude2 });
+            => Into(new[] { toInclude1, toInclude2 });
 
-        public IEnumerable<ICaptureGrouping5> Into(GroupSpecifier toInclude1, GroupSpecifier toInclude2, GroupSpecifier toInclude3)
+        public IEnumerable<ICaptureGrouping3> Into(GroupSpecifier toInclude1, GroupSpecifier toInclude2, GroupSpecifier toInclude3)
             => Into(new[] { toInclude1, toInclude2, toInclude3 });
 
-        public IEnumerable<ICaptureGrouping5> Into(GroupSpecifier toInclude1, GroupSpecifier toInclude2, GroupSpecifier toInclude3, GroupSpecifier toInclude4)
+        public IEnumerable<ICaptureGrouping4> Into(GroupSpecifier toInclude1, GroupSpecifier toInclude2, GroupSpecifier toInclude3, GroupSpecifier toInclude4)
             => Into(new[] { toInclude1, toInclude2, toInclude3, toInclude4 });
 
         public IEnumerable<ICaptureGrouping5> Into(GroupSpecifier toInclude1, GroupSpecifier toInclude2, GroupSpecifier toInclude3, GroupSpecifier toInclude4, GroupSpecifier toInclude5)
@@ -80,9 +82,26 @@ namespace Capsaicin.RegexUtil
             }
 
             var groups = Root.GetGroups(toInclude);
-            var columnIndexMap = Root.GetGroupIndexes(groups);
+            return IntoCore(groups);
+        }
 
-            foreach (var currentCaptureGroup in this)
+        public IEnumerable<CaptureGrouping> Into(Group[] toInclude)
+        {
+            if (toInclude is null)
+            {
+                throw new ArgumentNullException(nameof(toInclude));
+            }
+            if (toInclude.Length == 0)
+            {
+                throw new ArgumentException("Groups to select is empty.", nameof(toInclude));
+            }
+            return IntoCore(toInclude);
+        }
+
+        private IEnumerable<CaptureGrouping> IntoCore(Group[] toInclude)
+        { 
+            var columnIndexMap = Root.GetGroupIndexes(toInclude);
+            foreach (var currentCaptureGroup in CaptureGroups)
             {
                 var captureIndexes = new int[toInclude.Length];
                 for (int i = 0; i < toInclude.Length; i++)
@@ -90,8 +109,14 @@ namespace Capsaicin.RegexUtil
                     var rootGroupIndex = columnIndexMap[i];
                     captureIndexes[i] = currentCaptureGroup.CaptureIndexes[rootGroupIndex];
                 }
-                yield return currentCaptureGroup.Into(groups, captureIndexes);
+                yield return currentCaptureGroup.Into(toInclude, captureIndexes);
             }
+        }
+
+        // TODO: result items cannot be null because just one group is selected, can they?
+        public IEnumerable<string?> Flatten(GroupSpecifier toSelect)
+        {
+            return Flatten(new[] { toSelect }).Select(it => it.Captures[0]?.Value);
         }
 
         public IEnumerable<IFlattenedCaptureGrouping2> Flatten(GroupSpecifier toSelect1, GroupSpecifier toSelect2)
@@ -116,6 +141,22 @@ namespace Capsaicin.RegexUtil
 
         public IEnumerable<FlattenedCaptureGrouping> Flatten(params GroupSpecifier[] toSelect)
         {
+            if (toSelect is null)
+            {
+                throw new ArgumentNullException(nameof(toSelect));
+            }
+
+            var groups = Root.GetGroups(toSelect);
+            return Flatten(groups);
+        }
+
+        public IEnumerable<FlattenedCaptureGrouping> Flatten(Group[] toSelect)
+        {
+            if (toSelect is null)
+            {
+                throw new ArgumentNullException(nameof(toSelect));
+            }
+
             foreach (var grouping in Into(toSelect))
             {
                 foreach (var captureList in grouping.Captures)

@@ -10,45 +10,23 @@ namespace Capsaicin.RegexUtil
     public class CaptureGroupingDefinitionTest
     {
         [TestMethod]
-        public void FlattenTest()
+        [DataRow("(Ab)", "Ab")]
+        [DataRow("(1,2)", "1", "2")]
+        [DataRow("(a,b,c),(d),(e,f)", "a", "b", "c", "d", "e", "f")]
+        [DataRow("")]
+        public void FlattenTest(string expression, params string[] expected)
         {
             var regex = new Regex(@"^((?<tuple>\(((?<value>\w+)(,(?=\w))?)+\))(,(?=\())?)*$");
-            var match = regex.Match("(a,b,c),(d),(e,f)");
+            var match = regex.Match(expression);
             Assert.IsTrue(match.Success, "invalid test data");
-            var testObject = MatchExt
+            var testObject = (CaptureGroupingDefinition)MatchExt
                 .Group(match, "value")
                 .By("tuple");
 
             var actual = testObject.Flatten("value");
             Assert.IsNotNull(actual);
             var actualAsList = actual.ToList();
-
-            var expected = new (int ValueIndex, int TupleIndex)[]
-            {
-                (0, 0),
-                (1, 0),
-                (2, 0),
-                (3, 1),
-                (4, 2),
-                (5, 2)
-            };
-
-            Assert.AreEqual(expected.Length, actualAsList.Count);
-
-            var valueGroupCaptures = match.Groups["value"].Captures;
-            var tupleGroupCaptures = match.Groups["tuple"].Captures;
-            for (int i = 0; i < expected.Length; i++)
-            {
-                var (valueIndex, tupleIndex) = expected[i];
-                var expectedTupleCapture = tupleGroupCaptures[tupleIndex];
-                Assert.IsNotNull(actualAsList[i].CaptureGroup);
-                Assert.AreEqual(1, actualAsList[i].Count);
-                Assert.AreSame(valueGroupCaptures[valueIndex], actualAsList[i].Captures[0]);
-                Assert.AreSame(expectedTupleCapture, actualAsList[i].Key);
-                var actualCaptureGroupKey = actualAsList[i].CaptureGroup.Key;
-                Assert.AreEqual(1, actualCaptureGroupKey.Length); // no nested grouping in this test
-                Assert.AreSame(expectedTupleCapture, actualCaptureGroupKey[0]);
-            }
+            CollectionAssert.AreEqual(expected, actualAsList);
         }
 
         [TestMethod]
@@ -199,73 +177,26 @@ namespace Capsaicin.RegexUtil
         }
 
         [TestMethod]
-        public void Flatten1Test()
+        [DataRow("val3", "tuple", "c1", "c3", "c4")]
+        [DataRow("val1", "tuple", "a1", "a2", "a3", "a4")]
+        [DataRow("val4", "tuple", "d3")]
+        [DataRow("val5", "tuple")]
+        [DataRow("tuple", "tuple", "(a1,b1,c1)", "(a2)", "(a3,b3,c3,d3)", "(a4,b4,c4)")]
+        public void Flatten1Test(string toGroup, string by, params string[] expected)
         {
             var regex = new Regex(@"^(?<tuple>\((?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?\))+$");
             var match = regex.Match("(a1,b1,c1)(a2)(a3,b3,c3,d3)(a4,b4,c4)");
             Assert.IsTrue(match.Success, "invalid test data");
 
-            var expected = new int[,]
-            {
-                { 0 },
-                { 1 },
-                { 2 }
-            };
-
-            var testObject = match.Group("val3")
-                .By("tuple");
-            var toSelect = new GroupSpecifier[] { "val3" };
+            var testObject = match.Group(toGroup)
+                .By(by);
+            var toSelect = new GroupSpecifier[] { toGroup };
             var actual = testObject.Flatten(toSelect[0]);
-
-            VerifyFlattenX(match, expected, actual, toSelect);
+            Assert.IsNotNull(actual);
+            var actualAsList = actual.ToList();
+            CollectionAssert.AreEqual(expected, actualAsList);
         }
 
-        [TestMethod]
-        public void Flatten1Test2()
-        {
-            var regex = new Regex(@"^(?<tuple>\((?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?\))+$");
-            var match = regex.Match("(a1,b1,c1)(a2)(a3,b3,c3,d3)(a4,b4,c4)");
-            Assert.IsTrue(match.Success, "invalid test data");
-
-            var expected = new int[,]
-            {
-                { 0 },
-                { 1 },
-                { 2 },
-                { 3 }
-            };
-
-            var testObject = match.Group("val1")
-                .By("tuple");
-            var toSelect = new GroupSpecifier[] { "val1" };
-            var actual = testObject.Flatten(toSelect[0]);
-
-            VerifyFlattenX(match, expected, actual, toSelect);
-        }
-
-        [TestMethod]
-        public void Flatten1Test3()
-        {
-            var regex = new Regex(@"^(?<tuple>\((?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?\))+$");
-            var match = regex.Match("(a1,b1,c1)(a2)(a3,b3,c3,d3)(a4,b4,c4)");
-            Assert.IsTrue(match.Success, "invalid test data");
-
-            var expected = new int[,]
-            {
-                { 0 },
-                { 1 },
-                { 2 },
-                { 3 }
-            };
-
-            // the following group by makes no sense (select self) but it should work, though.
-            var testObject = match.Group("tuple")
-                .By("tuple");
-            var toSelect = new GroupSpecifier[] { "tuple" };
-            var actual = testObject.Flatten(toSelect[0]);
-
-            VerifyFlattenX(match, expected, actual, toSelect);
-        }
 
         [TestMethod]
         //[Timeout(200)]
@@ -276,7 +207,7 @@ namespace Capsaicin.RegexUtil
 
             var root = match
                 .Group("id", "property", "name", "value");
-            var parent = root.By("object");
+            var parent = (CaptureGroupingDefinition)root.By("object");
             var actual = parent.ThenBy("property");
             Assert.IsNotNull(actual);
             Assert.AreSame(root, actual.Root);
@@ -291,7 +222,7 @@ namespace Capsaicin.RegexUtil
                 new []{ objectCaptures[0], propertyCaptures[1] },
                 new []{ objectCaptures[1], propertyCaptures[2] }
             };
-            var actualCaptureGroups = actual.ToList();
+            var actualCaptureGroups = actual.CaptureGroups.ToList();
             Assert.AreEqual(expectedGroupKeys.Length, actualCaptureGroups.Count);
             for (int i = 0; i < expectedGroupKeys.Length; i++)
             {
@@ -307,7 +238,7 @@ namespace Capsaicin.RegexUtil
             var regex = new Regex(@"^(?<tuple>\((?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?\))+$");
             var match = regex.Match("(a)(b,c)(d)(e,f,g)");
             Assert.IsTrue(match.Success, "invalid test data");
-            var testObject = MatchExt
+            var testObject = (CaptureGroupingDefinition)MatchExt
                 .Group(match, "val1", "val5", "val2", "tuple")
                 .By("tuple");
 

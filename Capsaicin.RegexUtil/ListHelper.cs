@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 
 namespace Capsaicin.RegexUtil
@@ -19,6 +21,23 @@ namespace Capsaicin.RegexUtil
             for (int i = 0; i < count; i++)
             {
                 result[i] = list[start++];
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Copies the first <paramref name="n"/> items to a new array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="from"></param>
+        /// <param name="n">The number of items to take from the beginning of <paramref name="from"/>.</param>
+        /// <returns></returns>
+        public static T[] Take<T>(this IList<T> from, int n)
+        {
+            var result = new T[n];
+            for (int i = 0; i < n; i++)
+            {
+                result[i] = from[i];
             }
             return result;
         }

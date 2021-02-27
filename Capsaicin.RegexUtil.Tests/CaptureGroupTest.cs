@@ -61,6 +61,7 @@ namespace Capsaicin.RegexUtil
             var testObjects = match.Group("name", "value")
                 .By("prop")
                 .ThenBy("kvp")
+                .CaptureGroups
                 .ToList();
 
             var expectedData = expectedCaptureIndexesExpression
@@ -104,9 +105,9 @@ namespace Capsaicin.RegexUtil
             Assert.IsTrue(match.Success, "Invalid test data");
 
             var root = match.Group("name", "value");
-            var propGroupDefinition = root.By("prop");
+            var propGroupDefinition = (CaptureGroupingDefinition)root.By("prop");
 
-            var testObjects = propGroupDefinition.ToList();
+            var testObjects = propGroupDefinition.CaptureGroups.ToList();
 
             var expectedData = expectedCaptureIndexesExpression
                 .Split(';')

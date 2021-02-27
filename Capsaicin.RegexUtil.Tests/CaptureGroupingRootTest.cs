@@ -17,7 +17,7 @@ namespace Capsaicin.RegexUtil
             Assert.IsNotNull(actual);
             Assert.IsNull(actual.Parent);
             Assert.AreSame(match.Groups["tuple"], actual.GroupedBy);
-            Assert.AreSame(testObject, actual.Root);
+            Assert.AreSame(testObject, ((CaptureGroupingDefinition)actual).Root);
         }
     }
 }

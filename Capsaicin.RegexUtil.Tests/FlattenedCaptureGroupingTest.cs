@@ -37,7 +37,7 @@ namespace Capsaicin.RegexUtil
             var match = regex.Match(expression);
             Assert.IsTrue(match.Success, "invalid test data");
 
-            return match.Group("val1", "val2", "val3", "val4", "val5")
+            return (CaptureGroupingDefinition)match.Group("val1", "val2", "val3", "val4", "val5")
                 .By("tuple");
         }
 

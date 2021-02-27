@@ -7,7 +7,39 @@ using System.Text.RegularExpressions;
 
 namespace Capsaicin.RegexUtil
 {
-    public class CaptureGroupingRoot
+    public interface ICaptureGroupingRoot
+    {
+        ImmutableArray<Group> Groups { get; }
+
+        protected CaptureGroupingDefinition ByCore(GroupSpecifier group);
+    }
+
+    public interface ICaptureGroupingRoot1 : ICaptureGroupingRoot
+    {
+        ICaptureGroupingDefinition1 By(GroupSpecifier group) => ByCore(group);
+    }
+
+    public interface ICaptureGroupingRoot2 : ICaptureGroupingRoot1
+    {
+        new ICaptureGroupingDefinition2 By(GroupSpecifier group) => ByCore(group);
+    }
+
+    public interface ICaptureGroupingRoot3 : ICaptureGroupingRoot2
+    {
+        new ICaptureGroupingDefinition3 By(GroupSpecifier group) => ByCore(group);
+    }
+
+    public interface ICaptureGroupingRoot4 : ICaptureGroupingRoot3
+    {
+        new ICaptureGroupingDefinition4 By(GroupSpecifier group) => ByCore(group);
+    }
+
+    public interface ICaptureGroupingRoot5 : ICaptureGroupingRoot4
+    {
+        new ICaptureGroupingDefinition5 By(GroupSpecifier group) => ByCore(group);
+    }
+
+    public class CaptureGroupingRoot : ICaptureGroupingRoot1, ICaptureGroupingRoot2, ICaptureGroupingRoot3, ICaptureGroupingRoot4, ICaptureGroupingRoot5
     {
         internal CaptureGroupingRoot(Match match, GroupSpecifier[] groupSpecifiers)
         {
@@ -24,7 +56,7 @@ namespace Capsaicin.RegexUtil
         }
 
         public Match Match { get; }
-        
+
         public ImmutableArray<Group> Groups { get; }
 
         private readonly Dictionary<Group, int> GroupToIndexMap;
@@ -49,6 +81,9 @@ namespace Capsaicin.RegexUtil
 
             return new CaptureGroupingDefinition(this, groupObj);
         }
+
+        CaptureGroupingDefinition ICaptureGroupingRoot.ByCore(GroupSpecifier group)
+            => By(group);
 
         internal Group[] GetGroups(GroupSpecifier[] groups)
         {

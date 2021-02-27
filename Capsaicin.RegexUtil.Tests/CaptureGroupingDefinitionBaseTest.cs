@@ -15,7 +15,7 @@ namespace Capsaicin.RegexUtil
             var regex = new Regex(@"^(?<tuple>\((?<val1>\w+)(,(?<val2>\w+)(,(?<val3>\w+)(,(?<val4>\w+)(,(?<val5>\w+))?)?)?)?\))+$");
             var match = regex.Match("(a,b,c)(d)(e,f)");
             Assert.IsTrue(match.Success, "invalid test data");
-            var testObject = MatchExt
+            var testObject = (CaptureGroupingDefinition)MatchExt
                 .Group(match, "val1, val2", "val4")
                 .By("tuple");
 

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Capsaicin.RegexUtil
 {
 
-    public class NestedCaptureGroupingDefinition : CaptureGroupingDefinitionBase, IEnumerable<CaptureGroup>
+    public class NestedCaptureGroupingDefinition : CaptureGroupingDefinitionBase
     {
         internal NestedCaptureGroupingDefinition(CaptureGroupingDefinitionBase parent, Group groupedBy)
             : base(parent.Root, groupedBy)
