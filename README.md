@@ -22,9 +22,9 @@ var groups = match1
     .By("tuple");
 
 int count = 0;
-foreach (var group in groups)
+foreach (var tuple in groups)
 {
-    Console.WriteLine($"Values in group #{count++}: {string.Join(", ", group.Select("value"))}");
+    Console.WriteLine($"Values in group #{count++}: {string.Join(", ", tuple)}");
 }
 
 //
@@ -43,6 +43,7 @@ var properties = match
 
 foreach (var property in properties)
 {
+    // parent captures can be accessed using the "Parent" property
     var objectId = property.Parent?.First("id")?.Value ?? "<parent id not found>";
     (string? name, string? value) = property;
     Console.WriteLine($"{objectId}.{name} = {value}");
@@ -55,7 +56,8 @@ Console.WriteLine();
 Console.WriteLine("*** Example 3 ***");
 var objectGroups = match
     .Group("id", "property", "name", "value") // for nested groups it is essential to specify all captures that are later used!
-    .By("object");
+    .By("object")
+    .CaptureGroups;
 
 foreach (var objectGroup in objectGroups)
 {
@@ -65,7 +67,4 @@ foreach (var objectGroup in objectGroups)
         Console.WriteLine($"{name} = {value}");
     }
 }
-
-
-
 ```
