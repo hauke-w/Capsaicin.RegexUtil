@@ -3,7 +3,7 @@
 namespace Capsaicin.RegexUtil
 {
     /// <summary>
-    /// Capture group with one key capture
+    /// Capture group with one key capture. That means this is not nested.
     /// </summary>
     public interface ICaptureGroup1 : ICaptureGroup
     {
