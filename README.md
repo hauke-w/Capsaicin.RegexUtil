@@ -43,7 +43,7 @@ var properties = match
 
 foreach (var property in properties)
 {
-    var objectId = property.Parent!.First("id");
+    var objectId = property.Parent?.First("id")?.Value ?? "<parent id not found>";
     (string? name, string? value) = property;
     Console.WriteLine($"{objectId}.{name} = {value}");
 }
